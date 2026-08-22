@@ -3,61 +3,70 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../theme/app_theme.dart';
 
 class DailyProgressWidget extends StatelessWidget {
-  final int completed;
-  final int total;
+  final String title;
+  final String subtitle;
+  final double percent;
   final int streak;
+  final IconData icon;
+  final Color iconColor;
 
   const DailyProgressWidget({
     super.key,
-    required this.completed,
-    required this.total,
+    required this.title,
+    required this.subtitle,
+    required this.percent,
     required this.streak,
+    required this.icon,
+    required this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final double percent = total > 0 ? (completed / total).clamp(0.0, 1.0) : 0.0;
-    
     return Container(
       width: 250,
       height: 110,
       decoration: BoxDecoration(
         color: const Color(0xFF1C1C26), // AppTheme.surfaceLight equivalent
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0x3300FFB2)), // Neon Green alpha
+        border: Border.all(color: iconColor.withOpacity(0.2)),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00FFB2).withOpacity(0.15),
-                      shape: BoxShape.circle,
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: iconColor.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, color: iconColor, size: 16),
                     ),
-                    child: const Icon(PhosphorIconsFill.fire, color: Color(0xFF00FFB2), size: 16),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Daily Momentum',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      decoration: TextDecoration.none,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.none,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Text(
-                '$completed / $total',
+                subtitle,
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
@@ -67,30 +76,30 @@ class DailyProgressWidget extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const Spacer(),
           // Progress Bar Track
           Container(
-            height: 12,
+            height: 10,
             width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.black38,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
             alignment: Alignment.centerLeft,
             child: FractionallySizedBox(
               widthFactor: percent,
               child: Container(
-                height: 12,
+                height: 10,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFFFF2E93), Color(0xFF00FFB2)],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const Spacer(),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:home_widget/home_widget.dart';
 import '../providers/habit_provider.dart';
 import '../providers/settings_provider.dart';
 import '../theme/app_theme.dart';
@@ -11,6 +12,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final heatmapSettings = ref.watch(heatmapSettingsProvider);
+    final habits = ref.watch(habitsProvider).where((h) => !h.isArchived).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -99,6 +101,53 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+
+          // ── Home Screen Widget ──
+          const Text(
+            'Home Screen Widget',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 16),
+
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.accentNeonGreen.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(PhosphorIconsRegular.squaresFour, color: AppTheme.accentNeonGreen),
+            ),
+            title: const Text('Pin Widget to Home Screen'),
+            subtitle: const Text('Add Daily Momentum widget for quick access'),
+            onTap: () async {
+              try {
+                final isSupported = await HomeWidget.isRequestPinWidgetSupported() ?? false;
+                if (isSupported) {
+                  await HomeWidget.requestPinWidget(
+                    name: 'HabitWidgetProvider',
+                    androidName: 'HabitWidgetProvider',
+                    qualifiedAndroidName: 'com.example.habitflow.HabitWidgetProvider',
+                  );
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Pinning widget directly is not supported on this device. Please add it from your home screen.'),
+                      ),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error pinning widget: $e')),
+                  );
+                }
+              }
+            },
           ),
 
           const SizedBox(height: 32),

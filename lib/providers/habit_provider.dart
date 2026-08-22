@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/habit.dart';
+import 'package:home_widget/home_widget.dart';
 import '../services/notification_service.dart';
 import '../services/home_widget_service.dart';
 
@@ -92,6 +93,96 @@ final globalStreakProvider = Provider<int>((ref) {
   return streak;
 });
 
+class ActiveWidgetIdsNotifier extends StateNotifier<List<String>> {
+  ActiveWidgetIdsNotifier() : super([]) {
+    reload();
+  }
+  
+  Future<void> reload() async {
+    final activeIdsString = await HomeWidget.getWidgetData<String>('active_widget_ids_list');
+    if (activeIdsString != null && activeIdsString.isNotEmpty) {
+      state = activeIdsString.split(',').where((s) => s.isNotEmpty).toList();
+    } else {
+      state = [];
+    }
+  }
+}
+
+final activeWidgetIdsProvider = StateNotifierProvider<ActiveWidgetIdsNotifier, List<String>>((ref) {
+  return ActiveWidgetIdsNotifier();
+});
+
+class WidgetHabitIdNotifier extends StateNotifier<String?> {
+  static const _key = 'widget_selected_habit_id';
+  
+  Map<String, String?> stateMap = {};
+
+  WidgetHabitIdNotifier() : super(null) {
+    reload();
+  }
+
+  Future<void> reload() async {
+    state = await HomeWidget.getWidgetData<String>(_key);
+    final activeIdsString = await HomeWidget.getWidgetData<String>('active_widget_ids_list') ?? '';
+    final activeIds = activeIdsString.split(',').where((s) => s.isNotEmpty).toList();
+    final map = <String, String?>{};
+    for (final id in activeIds) {
+      map[id] = await HomeWidget.getWidgetData<String>('widget_selected_habit_id_$id');
+    }
+    stateMap = map;
+    state = state; // trigger rebuild
+  }
+
+  Future<void> selectHabit(String? id) async {
+    state = id;
+    await HomeWidget.saveWidgetData(_key, id);
+  }
+
+  Future<void> selectHabitForInstance(String widgetId, String? habitId) async {
+    stateMap = Map<String, String?>.from(stateMap)..[widgetId] = habitId;
+    await HomeWidget.saveWidgetData('widget_selected_habit_id_$widgetId', habitId);
+    state = state; // trigger update
+  }
+}
+
+final widgetHabitIdProvider = StateNotifierProvider<WidgetHabitIdNotifier, String?>((ref) {
+  return WidgetHabitIdNotifier();
+});
+
+final widgetHabitIdForInstanceProvider = Provider.family<String?, String>((ref, widgetId) {
+  final widgetSelectedHabitIdMap = ref.watch(widgetHabitIdProvider.notifier).stateMap;
+  ref.watch(widgetHabitIdProvider);
+  return widgetSelectedHabitIdMap[widgetId];
+});
+
+final homeWidgetUpdaterProvider = Provider<void>((ref) {
+  final habits = ref.watch(habitsProvider);
+  final records = ref.watch(habitRecordsProvider);
+  final streak = ref.watch(globalStreakProvider);
+  final widgetSelectedHabitId = ref.watch(widgetHabitIdProvider);
+  final activeWidgetIds = ref.watch(activeWidgetIdsProvider);
+
+  Future.microtask(() {
+    HomeWidgetService.updateWidget(
+      habits: habits,
+      records: records,
+      globalStreak: streak,
+      widgetSelectedHabitId: widgetSelectedHabitId,
+    );
+
+    for (final widgetId in activeWidgetIds) {
+      final habitId = ref.read(widgetHabitIdProvider.notifier).stateMap[widgetId];
+      HomeWidgetService.updateWidgetForInstance(
+        widgetId: widgetId,
+        habits: habits,
+        records: records,
+        globalStreak: streak,
+        widgetSelectedHabitId: habitId,
+      );
+    }
+  });
+});
+
 class HabitNotifier extends StateNotifier<List<Habit>> {
   final SharedPreferences _prefs;
   static const _key = 'habits_data';
@@ -147,13 +238,18 @@ class HabitNotifier extends StateNotifier<List<Habit>> {
   }
 
   void toggleArchive(String id) {
+    Habit? updatedHabit;
     state = state.map((h) {
       if (h.id == id) {
-        return h.copyWith(isArchived: !h.isArchived);
+        updatedHabit = h.copyWith(isArchived: !h.isArchived);
+        return updatedHabit!;
       }
       return h;
     }).toList();
     _save();
+    if (updatedHabit != null) {
+      _handleNotification(updatedHabit!);
+    }
   }
 
   void reorderHabits(int oldIndex, int newIndex) {

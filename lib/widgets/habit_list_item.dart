@@ -148,14 +148,16 @@ class HabitListItem extends ConsumerWidget {
         }
       },
       background: Container(
+        margin: const EdgeInsets.symmetric(vertical: 3.0, horizontal: 4.0),
         padding: const EdgeInsets.only(left: 24),
-        decoration: BoxDecoration(color: Colors.indigoAccent, borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(color: Colors.indigoAccent, borderRadius: BorderRadius.circular(16)),
         alignment: Alignment.centerLeft,
         child: const Icon(PhosphorIconsBold.pencilSimple, color: Colors.white),
       ),
       secondaryBackground: Container(
+        margin: const EdgeInsets.symmetric(vertical: 3.0, horizontal: 4.0),
         padding: const EdgeInsets.only(right: 24),
-        decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(16)),
         alignment: Alignment.centerRight,
         child: const Icon(PhosphorIconsBold.trash, color: Colors.white),
       ),

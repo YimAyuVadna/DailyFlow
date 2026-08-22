@@ -1,16 +1,18 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:home_widget/home_widget.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
-import 'screens/splash_screen.dart';
+
 import 'providers/habit_provider.dart';
 import 'services/notification_service.dart';
+import 'services/home_widget_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  HomeWidget.registerBackgroundCallback(backgroundCallback);
 
   final sharedPreferences = await SharedPreferences.getInstance();
 
@@ -49,6 +51,7 @@ class DailyFlowApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(homeWidgetUpdaterProvider);
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(
@@ -57,7 +60,7 @@ class DailyFlowApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      home: SplashScreen(child: const HomeScreen()),
+      home: const HomeScreen(),
     );
   }
 }
