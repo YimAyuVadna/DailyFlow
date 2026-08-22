@@ -4,6 +4,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../providers/habit_provider.dart';
 import '../theme/app_theme.dart';
 import '../models/habit.dart';
+import '../widgets/achievement_unlocked_dialog.dart';
 
 class BadgeData {
   final String id;
@@ -41,7 +42,7 @@ class BadgeStats {
   });
 }
 
-final _allBadges = [
+final allBadges = [
   // Completions
   BadgeData(
     id: 'first_step',
@@ -95,8 +96,8 @@ final _allBadges = [
   ),
   BadgeData(
     id: 'consistency',
-    title: 'Consistency',
-    description: 'Complete at least 1 habit 14 days in a row.',
+    title: 'Momentum Builder',
+    description: 'Maintained your habit discipline for 14 continuous days.',
     icon: PhosphorIconsFill.arrowsClockwise,
     color: AppTheme.accentBlue,
     isUnlocked: (s) => s.longestActiveStreak >= 14,
@@ -205,84 +206,115 @@ final _allBadges = [
   ),
 ];
 
-class BadgesScreen extends ConsumerWidget {
-  const BadgesScreen({super.key});
-
-  BadgeStats _calculateStats(
-      List<Habit> activeHabits, Map<String, Map<String, HabitRecord>> records) {
-    if (records.isEmpty || activeHabits.isEmpty) {
-      return const BadgeStats(
-        totalCompletions: 0, 
-        longestPerfectStreak: 0, 
-        longestActiveStreak: 0,
-        perfectDays: 0,
-        weekendCompletions: 0,
-        maxHabitsInOneDay: 0,
-      );
-    }
-
-    int totalCompletions = 0;
-    int perfectDays = 0;
-    int currentPerfectStreak = 0;
-    int longestPerfectStreak = 0;
-    int currentActiveStreak = 0;
-    int longestActiveStreak = 0;
-    int weekendCompletions = 0;
-    int maxHabitsInOneDay = 0;
-
-    final dateKeys = records.keys.toList()..sort();
-    
-    for (final dateKey in dateKeys) {
-      final dayRecords = records[dateKey]!;
-      int completedToday = 0;
-
-      // Check if it's a weekend (Saturday = 6, Sunday = 7)
-      final date = DateTime.parse(dateKey);
-      final isWeekend = date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
-
-      for (final r in dayRecords.values) {
-        if (r.isCompleted) {
-          completedToday++;
-          totalCompletions++;
-          if (isWeekend) weekendCompletions++;
-        }
-      }
-
-      if (completedToday > maxHabitsInOneDay) {
-        maxHabitsInOneDay = completedToday;
-      }
-
-      // Active Streak (at least 1 habit done)
-      if (completedToday > 0) {
-        currentActiveStreak++;
-        if (currentActiveStreak > longestActiveStreak) {
-          longestActiveStreak = currentActiveStreak;
-        }
-      } else {
-        currentActiveStreak = 0;
-      }
-
-      // Perfect Streak (all active habits done)
-      if (completedToday > 0 && completedToday >= activeHabits.length) {
-        perfectDays++;
-        currentPerfectStreak++;
-        if (currentPerfectStreak > longestPerfectStreak) {
-          longestPerfectStreak = currentPerfectStreak;
-        }
-      } else {
-        currentPerfectStreak = 0;
-      }
-    }
-
-    return BadgeStats(
-      totalCompletions: totalCompletions,
-      longestPerfectStreak: longestPerfectStreak,
-      longestActiveStreak: longestActiveStreak,
-      perfectDays: perfectDays,
-      weekendCompletions: weekendCompletions,
-      maxHabitsInOneDay: maxHabitsInOneDay,
+BadgeStats calculateBadgeStats(
+    List<Habit> activeHabits, Map<String, Map<String, HabitRecord>> records) {
+  if (records.isEmpty || activeHabits.isEmpty) {
+    return const BadgeStats(
+      totalCompletions: 0,
+      longestPerfectStreak: 0,
+      longestActiveStreak: 0,
+      perfectDays: 0,
+      weekendCompletions: 0,
+      maxHabitsInOneDay: 0,
     );
   }
+
+  int totalCompletions = 0;
+  int perfectDays = 0;
+  int currentPerfectStreak = 0;
+  int longestPerfectStreak = 0;
+  int currentActiveStreak = 0;
+  int longestActiveStreak = 0;
+  int weekendCompletions = 0;
+  int maxHabitsInOneDay = 0;
+
+  final dateKeys = records.keys.toList()..sort();
+
+  for (final dateKey in dateKeys) {
+    final dayRecords = records[dateKey]!;
+    int completedToday = 0;
+
+    // Check if it's a weekend (Saturday = 6, Sunday = 7)
+    final date = DateTime.parse(dateKey);
+    final isWeekend = date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
+
+    for (final r in dayRecords.values) {
+      if (r.isCompleted) {
+        completedToday++;
+        totalCompletions++;
+        if (isWeekend) weekendCompletions++;
+      }
+    }
+
+    if (completedToday > maxHabitsInOneDay) {
+      maxHabitsInOneDay = completedToday;
+    }
+
+    // Active Streak (at least 1 habit done)
+    if (completedToday > 0) {
+      currentActiveStreak++;
+      if (currentActiveStreak > longestActiveStreak) {
+        longestActiveStreak = currentActiveStreak;
+      }
+    } else {
+      currentActiveStreak = 0;
+    }
+
+    // Perfect Streak (all active habits done)
+    if (completedToday > 0 && completedToday >= activeHabits.length) {
+      perfectDays++;
+      currentPerfectStreak++;
+      if (currentPerfectStreak > longestPerfectStreak) {
+        longestPerfectStreak = currentPerfectStreak;
+      }
+    } else {
+      currentPerfectStreak = 0;
+    }
+  }
+
+  return BadgeStats(
+    totalCompletions: totalCompletions,
+    longestPerfectStreak: longestPerfectStreak,
+    longestActiveStreak: longestActiveStreak,
+    perfectDays: perfectDays,
+    weekendCompletions: weekendCompletions,
+    maxHabitsInOneDay: maxHabitsInOneDay,
+  );
+}
+
+final unlockedBadgesProvider = Provider<List<String>>((ref) {
+  final habits = ref.watch(habitsProvider);
+  final activeHabits = habits.where((h) => !h.isArchived).toList();
+  final records = ref.watch(habitRecordsProvider);
+
+  final stats = calculateBadgeStats(activeHabits, records);
+  return allBadges.where((badge) => badge.isUnlocked(stats)).map((badge) => badge.id).toList();
+});
+
+final acknowledgedBadgesProvider = NotifierProvider<AcknowledgedBadgesNotifier, List<String>>(
+  () => AcknowledgedBadgesNotifier(),
+);
+
+class AcknowledgedBadgesNotifier extends Notifier<List<String>> {
+  static const _seenKey = 'seen_unlocked_badges';
+
+  @override
+  List<String> build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return prefs.getStringList(_seenKey) ?? [];
+  }
+
+  void acknowledgeBadge(String id) {
+    if (state.contains(id)) return;
+    final newState = [...state, id];
+    state = newState;
+    final prefs = ref.read(sharedPreferencesProvider);
+    prefs.setStringList(_seenKey, newState);
+  }
+}
+
+class BadgesScreen extends ConsumerWidget {
+  const BadgesScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -290,7 +322,7 @@ class BadgesScreen extends ConsumerWidget {
     final activeHabits = habits.where((h) => !h.isArchived).toList();
     final records = ref.watch(habitRecordsProvider);
 
-    final stats = _calculateStats(activeHabits, records);
+    final stats = calculateBadgeStats(activeHabits, records);
 
     return Scaffold(
       backgroundColor: AppTheme.getSurface(context),
@@ -345,12 +377,12 @@ class BadgesScreen extends ConsumerWidget {
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  final badge = _allBadges[index];
+                  final badge = allBadges[index];
                   final isUnlocked = badge.isUnlocked(stats);
 
                   return _BadgeCard(badge: badge, isUnlocked: isUnlocked);
                 },
-                childCount: _allBadges.length,
+                childCount: allBadges.length,
               ),
             ),
           ),
@@ -374,78 +406,85 @@ class _BadgeCard extends StatelessWidget {
     final bgColor = AppTheme.getSurfaceLight(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-        border: isUnlocked
-            ? Border.all(color: badge.color.withValues(alpha: 0.5), width: 2)
-            : Border.all(color: Colors.transparent, width: 2),
-        boxShadow: isUnlocked
-            ? [
-                BoxShadow(
-                  color: badge.color.withValues(alpha: 0.2),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                )
-              ]
-            : [],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Icon Box
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isUnlocked
-                  ? badge.color.withValues(alpha: 0.15)
-                  : (isDark ? Colors.white10 : Colors.black12),
-            ),
-            child: Center(
-              child: Icon(
-                isUnlocked ? badge.icon : PhosphorIconsFill.lockKey,
-                size: 32,
+    return GestureDetector(
+      onTap: isUnlocked
+          ? () {
+              AchievementUnlockedDialog.show(context, badge);
+            }
+          : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(20),
+          border: isUnlocked
+              ? Border.all(color: badge.color.withValues(alpha: 0.5), width: 2)
+              : Border.all(color: Colors.transparent, width: 2),
+          boxShadow: isUnlocked
+              ? [
+                  BoxShadow(
+                    color: badge.color.withValues(alpha: 0.2),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  )
+                ]
+              : [],
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icon Box
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
                 color: isUnlocked
-                    ? badge.color
-                    : AppTheme.getTextSecondary(context).withValues(alpha: 0.5),
+                    ? badge.color.withValues(alpha: 0.15)
+                    : (isDark ? Colors.white10 : Colors.black12),
+              ),
+              child: Center(
+                child: Icon(
+                  isUnlocked ? badge.icon : PhosphorIconsFill.lockKey,
+                  size: 32,
+                  color: isUnlocked
+                      ? badge.color
+                      : AppTheme.getTextSecondary(context).withValues(alpha: 0.5),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          // Title
-          Text(
-            badge.title,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: isUnlocked
-                  ? (isDark ? Colors.white : Colors.black)
-                  : AppTheme.getTextSecondary(context),
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          // Description
-          Expanded(
-            child: Text(
-              badge.description,
+            const SizedBox(height: 16),
+            // Title
+            Text(
+              badge.title,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 11,
-                color: AppTheme.getTextSecondary(context)
-                    .withValues(alpha: isUnlocked ? 0.9 : 0.5),
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: isUnlocked
+                    ? (isDark ? Colors.white : Colors.black)
+                    : AppTheme.getTextSecondary(context),
               ),
-              maxLines: 3,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            // Description
+            Expanded(
+              child: Text(
+                badge.description,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppTheme.getTextSecondary(context)
+                      .withValues(alpha: isUnlocked ? 0.9 : 0.5),
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

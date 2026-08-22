@@ -19,6 +19,7 @@ class Habit {
   final bool isArchived;
   final String? reminderTime; // "HH:MM" format
   final String? timeOfDay; // "Morning", "Afternoon", "Evening", "Anytime"
+  final List<int> activeDays;
 
   const Habit({
     required this.id,
@@ -35,6 +36,7 @@ class Habit {
     this.isArchived = false,
     this.reminderTime,
     this.timeOfDay = 'Anytime',
+    this.activeDays = const [1, 2, 3, 4, 5, 6, 7],
   });
 
   Habit copyWith({
@@ -52,6 +54,7 @@ class Habit {
     bool? isArchived,
     String? reminderTime,
     String? timeOfDay,
+    List<int>? activeDays,
   }) {
     return Habit(
       id: id ?? this.id,
@@ -68,6 +71,7 @@ class Habit {
       isArchived: isArchived ?? this.isArchived,
       reminderTime: reminderTime ?? this.reminderTime,
       timeOfDay: timeOfDay ?? this.timeOfDay,
+      activeDays: activeDays ?? this.activeDays,
     );
   }
 
@@ -87,6 +91,7 @@ class Habit {
       'isArchived': isArchived,
       'reminderTime': reminderTime,
       'timeOfDay': timeOfDay,
+      'activeDays': activeDays,
     };
   }
 
@@ -106,6 +111,9 @@ class Habit {
       isArchived: json['isArchived'] as bool? ?? false,
       reminderTime: json['reminderTime'] as String?,
       timeOfDay: json['timeOfDay'] as String? ?? 'Anytime',
+      activeDays: json['activeDays'] != null
+          ? (json['activeDays'] as List).map((e) => e as int).toList()
+          : const [1, 2, 3, 4, 5, 6, 7],
     );
   }
 }

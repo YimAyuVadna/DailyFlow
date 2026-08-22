@@ -166,6 +166,7 @@ class _CreateHabitSheetState extends ConsumerState<CreateHabitSheet> {
       isArchived: isEditing ? widget.initialHabit!.isArchived : false,
       reminderTime: finalReminderTime,
       timeOfDay: _timeOfDay,
+      activeDays: isEditing ? widget.initialHabit!.activeDays : const [1, 2, 3, 4, 5, 6, 7],
     );
 
     if (isEditing) {

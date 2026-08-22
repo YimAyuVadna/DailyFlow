@@ -43,6 +43,54 @@
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info" />
         </receiver>
+        <receiver android:name="com.example.habitflow.StreakWidgetProvider" android:exported="true" android:label="Habit Streak">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/streak_widget_info" />
+        </receiver>
+        <receiver android:name="com.example.habitflow.DailyFlowWidgetProvider" android:exported="true" android:label="Daily Flow">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/daily_flow_widget_info" />
+        </receiver>
+        <receiver android:name="com.example.habitflow.QuickFocusWidgetProvider" android:exported="true" android:label="Quick Focus">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/quick_focus_widget_info" />
+        </receiver>
+        <receiver android:name="com.example.habitflow.PriorityHabitsWidgetProvider" android:exported="true" android:label="Priority Habits">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/priority_habits_widget_info" />
+        </receiver>
+        <receiver android:name="com.example.habitflow.CircadianWidgetProvider" android:exported="true" android:label="Circadian Energy Map">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/circadian_widget_info" />
+        </receiver>
+        <receiver android:name="com.example.habitflow.MasterGridWidgetProvider" android:exported="true" android:label="Master Rhythm Grid">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/master_grid_widget_info" />
+        </receiver>
+        <receiver android:name="com.example.habitflow.LockRingWidgetProvider" android:exported="true" android:label="Lock Screen Habit Ring">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/lock_ring_widget_info" />
+        </receiver>
+        <receiver android:name="com.example.habitflow.LockStreakWidgetProvider" android:exported="true" android:label="Lock Screen Best Streak">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/lock_streak_widget_info" />
+        </receiver>
 
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/habit.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../services/notification_service.dart';
 import '../services/home_widget_service.dart';
 
@@ -16,13 +17,12 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   static const _key = 'theme_mode';
 
   ThemeModeNotifier(this._prefs) : super(ThemeMode.dark) {
-    final isLight = _prefs.getBool(_key) ?? false;
-    if (isLight) state = ThemeMode.light;
+    _prefs.setBool(_key, false);
   }
 
   void toggle() {
-    state = state == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
-    _prefs.setBool(_key, state == ThemeMode.light);
+    state = ThemeMode.dark;
+    _prefs.setBool(_key, false);
   }
 }
 
@@ -65,7 +65,7 @@ final habitsProvider = StateNotifierProvider<HabitNotifier, List<Habit>>((ref) {
 
 final habitRecordsProvider = StateNotifierProvider<HabitRecordNotifier, Map<String, Map<String, HabitRecord>>>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return HabitRecordNotifier(prefs);
+  return HabitRecordNotifier(prefs, ref);
 });
 
 // Computes a user's current daily streak (days where at least 1 habit was completed)
@@ -159,27 +159,13 @@ final homeWidgetUpdaterProvider = Provider<void>((ref) {
   final habits = ref.watch(habitsProvider);
   final records = ref.watch(habitRecordsProvider);
   final streak = ref.watch(globalStreakProvider);
-  final widgetSelectedHabitId = ref.watch(widgetHabitIdProvider);
-  final activeWidgetIds = ref.watch(activeWidgetIdsProvider);
 
   Future.microtask(() {
-    HomeWidgetService.updateWidget(
+    HomeWidgetService.updateAllWidgets(
       habits: habits,
       records: records,
       globalStreak: streak,
-      widgetSelectedHabitId: widgetSelectedHabitId,
     );
-
-    for (final widgetId in activeWidgetIds) {
-      final habitId = ref.read(widgetHabitIdProvider.notifier).stateMap[widgetId];
-      HomeWidgetService.updateWidgetForInstance(
-        widgetId: widgetId,
-        habits: habits,
-        records: records,
-        globalStreak: streak,
-        widgetSelectedHabitId: habitId,
-      );
-    }
   });
 });
 
@@ -280,9 +266,17 @@ class HabitNotifier extends StateNotifier<List<Habit>> {
 
 class HabitRecordNotifier extends StateNotifier<Map<String, Map<String, HabitRecord>>> {
   final SharedPreferences _prefs;
+  final Ref _ref;
   static const _key = 'habit_records_data';
+  final _audioPlayer = AudioPlayer();
 
-  HabitRecordNotifier(this._prefs) : super({}) {
+  Future<void> _playCompleteSound() async {
+    try {
+      await _audioPlayer.play(AssetSource('sounds/complete.mp3'));
+    } catch (_) {}
+  }
+
+  HabitRecordNotifier(this._prefs, this._ref) : super({}) {
     _load();
   }
 
@@ -326,6 +320,7 @@ class HabitRecordNotifier extends StateNotifier<Map<String, Map<String, HabitRec
     
     final dayRecords = Map<String, HabitRecord>.from(currentRecords[dKey]!);
     final record = dayRecords[habitId] ?? HabitRecord(habitId: habitId, date: date);
+    final wasCompleted = record.isCompleted;
     
     double newValue = record.currentValue + value;
     if (newValue > habit.targetValue) newValue = habit.targetValue;
@@ -341,6 +336,10 @@ class HabitRecordNotifier extends StateNotifier<Map<String, Map<String, HabitRec
     currentRecords[dKey] = dayRecords;
     state = currentRecords;
     _save();
+
+    if (isCompleted && !wasCompleted) {
+      _playCompleteSound();
+    }
   }
 
   void resetProgress(String habitId, DateTime date) {

@@ -57,9 +57,9 @@ class DailyFlowApp extends ConsumerWidget {
     return MaterialApp(
       title: 'DailyFlow',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.darkTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: themeMode,
+      themeMode: ThemeMode.dark,
       home: const HomeScreen(),
     );
   }

@@ -7,6 +7,7 @@ import '../models/habit.dart';
 import '../widgets/app_home_widget.dart';
 import '../utils/icon_helper.dart';
 
+
 @pragma('vm:entry-point')
 Future<void> backgroundCallback(Uri? uri) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -135,6 +136,8 @@ Future<void> backgroundCallback(Uri? uri) async {
     );
     records[dKey] = dayRecords;
 
+
+
     // Save records back to SharedPreferences
     final encodedMap = <String, Map<String, dynamic>>{};
     records.forEach((dateKey, dayMap) {
@@ -206,77 +209,7 @@ class HomeWidgetService {
     required int globalStreak,
     required String? widgetSelectedHabitId,
   }) async {
-    final today = DateTime.now();
-    final dateKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-    final dayRecords = records[dateKey] ?? {};
-
-    String title;
-    String subtitle;
-    double percent;
-    int streak;
-    IconData icon;
-    Color iconColor;
-
-    final selectedHabit = widgetSelectedHabitId != null
-        ? habits.cast<Habit?>().firstWhere((h) => h?.id == widgetSelectedHabitId, orElse: () => null)
-        : null;
-
-    if (selectedHabit != null) {
-      final record = dayRecords[selectedHabit.id];
-      final currentValue = record?.currentValue ?? 0.0;
-      final targetValue = selectedHabit.targetValue;
-      final isCompleted = record?.isCompleted ?? false;
-
-      title = selectedHabit.title;
-      percent = targetValue > 0 ? (currentValue / targetValue).clamp(0.0, 1.0) : 0.0;
-      streak = selectedHabit.streak;
-      icon = getHabitIcon(selectedHabit.iconName);
-      iconColor = Color(selectedHabit.colorHex);
-
-      if (selectedHabit.type == HabitType.boolean) {
-        subtitle = isCompleted ? 'Completed' : 'Pending';
-      } else {
-        final currentStr = currentValue.toStringAsFixed(1).replaceAll('.0', '');
-        final targetStr = targetValue.toStringAsFixed(1).replaceAll('.0', '');
-        subtitle = '$currentStr / $targetStr ${selectedHabit.unit}';
-      }
-    } else {
-      final activeHabits = habits.where((h) => !h.isArchived).toList();
-      int completed = 0;
-      for (final habit in activeHabits) {
-        if (dayRecords[habit.id]?.isCompleted == true) {
-          completed++;
-        }
-      }
-      final total = activeHabits.length;
-
-      title = 'Daily Momentum';
-      subtitle = '$completed / $total';
-      percent = total > 0 ? (completed / total).clamp(0.0, 1.0) : 0.0;
-      streak = globalStreak;
-      icon = PhosphorIconsFill.fire;
-      iconColor = const Color(0xFF00FFB2);
-    }
-
-    // Render the flutter widget to an image
-    await HomeWidget.renderFlutterWidget(
-      DailyProgressWidget(
-        title: title,
-        subtitle: subtitle,
-        percent: percent,
-        streak: streak,
-        icon: icon,
-        iconColor: iconColor,
-      ),
-      key: 'widget_image',
-      logicalSize: const Size(250, 110),
-    );
-
-    // Trigger the update to Android
-    await HomeWidget.updateWidget(
-      name: androidWidgetName,
-      iOSName: 'HabitWidget',
-    );
+    await updateAllWidgets(habits: habits, records: records, globalStreak: globalStreak);
   }
 
   static Future<void> updateWidgetForInstance({
@@ -286,76 +219,216 @@ class HomeWidgetService {
     required int globalStreak,
     required String? widgetSelectedHabitId,
   }) async {
+    await updateAllWidgets(habits: habits, records: records, globalStreak: globalStreak);
+  }
+
+  static Future<void> updateAllWidgets({
+    required List<Habit> habits,
+    required Map<String, Map<String, HabitRecord>> records,
+    required int globalStreak,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    final types = ['streak', 'flow', 'focus', 'priority', 'circadian', 'master_grid', 'lock_ring', 'lock_streak'];
+    
+    for (final type in types) {
+      final activeIdsString = prefs.getString('active_widget_ids_list_$type') ?? '';
+      final activeIds = activeIdsString.split(',').where((s) => s.isNotEmpty).toList();
+      
+      // Check legacy/default list for streak widgets too
+      if (type == 'streak') {
+        final legacyIdsString = prefs.getString('active_widget_ids_list') ?? '';
+        final legacyIds = legacyIdsString.split(',').where((s) => s.isNotEmpty).toList();
+        activeIds.addAll(legacyIds);
+      }
+      
+      if (activeIds.isEmpty) {
+        // Render fallback image
+        await _renderWidgetImage(
+          widgetId: null,
+          type: type,
+          habits: habits,
+          records: records,
+          globalStreak: globalStreak,
+          widgetSelectedHabitId: prefs.getString('widget_selected_habit_id'),
+        );
+      } else {
+        for (final widgetId in activeIds) {
+          final habitId = prefs.getString('widget_selected_habit_id_$widgetId');
+          await _renderWidgetImage(
+            widgetId: widgetId,
+            type: type,
+            habits: habits,
+            records: records,
+            globalStreak: globalStreak,
+            widgetSelectedHabitId: habitId,
+          );
+        }
+      }
+
+      // Notify Android to refresh this specific provider
+      final String androidProviderName;
+      if (type == 'streak') {
+        androidProviderName = 'StreakWidgetProvider';
+        // Redraw legacy widget too just in case
+        await HomeWidget.updateWidget(
+          name: 'HabitWidgetProvider',
+          iOSName: 'HabitWidget',
+        );
+      } else if (type == 'flow') {
+        androidProviderName = 'DailyFlowWidgetProvider';
+      } else if (type == 'focus') {
+        androidProviderName = 'QuickFocusWidgetProvider';
+      } else if (type == 'priority') {
+        androidProviderName = 'PriorityHabitsWidgetProvider';
+      } else if (type == 'circadian') {
+        androidProviderName = 'CircadianWidgetProvider';
+      } else if (type == 'master_grid') {
+        androidProviderName = 'MasterGridWidgetProvider';
+      } else if (type == 'lock_ring') {
+        androidProviderName = 'LockRingWidgetProvider';
+      } else if (type == 'lock_streak') {
+        androidProviderName = 'LockStreakWidgetProvider';
+      } else {
+        androidProviderName = 'StreakWidgetProvider';
+      }
+
+      await HomeWidget.updateWidget(
+        name: androidProviderName,
+        iOSName: 'HabitWidget',
+      );
+    }
+  }
+
+  static Future<void> _renderWidgetImage({
+    required String? widgetId,
+    required String type,
+    required List<Habit> habits,
+    required Map<String, Map<String, HabitRecord>> records,
+    required int globalStreak,
+    required String? widgetSelectedHabitId,
+  }) async {
     final today = DateTime.now();
     final dateKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
     final dayRecords = records[dateKey] ?? {};
-
-    String title;
-    String subtitle;
-    double percent;
-    int streak;
-    IconData icon;
-    Color iconColor;
 
     final selectedHabit = widgetSelectedHabitId != null
         ? habits.cast<Habit?>().firstWhere((h) => h?.id == widgetSelectedHabitId, orElse: () => null)
         : null;
 
+    // 1. Calculate values for Streak
+    final double currentProgress;
+    final double targetProgress;
+    final String unit;
+    final int streak;
     if (selectedHabit != null) {
       final record = dayRecords[selectedHabit.id];
-      final currentValue = record?.currentValue ?? 0.0;
-      final targetValue = selectedHabit.targetValue;
-      final isCompleted = record?.isCompleted ?? false;
-
-      title = selectedHabit.title;
-      percent = targetValue > 0 ? (currentValue / targetValue).clamp(0.0, 1.0) : 0.0;
+      currentProgress = record?.currentValue ?? 0.0;
+      targetProgress = selectedHabit.targetValue;
+      unit = selectedHabit.unit.isEmpty ? 'done' : selectedHabit.unit;
       streak = selectedHabit.streak;
-      icon = getHabitIcon(selectedHabit.iconName);
-      iconColor = Color(selectedHabit.colorHex);
-
-      if (selectedHabit.type == HabitType.boolean) {
-        subtitle = isCompleted ? 'Completed' : 'Pending';
-      } else {
-        final currentStr = currentValue.toStringAsFixed(1).replaceAll('.0', '');
-        final targetStr = targetValue.toStringAsFixed(1).replaceAll('.0', '');
-        subtitle = '$currentStr / $targetStr ${selectedHabit.unit}';
-      }
     } else {
-      final activeHabits = habits.where((h) => !h.isArchived).toList();
-      int completed = 0;
-      for (final habit in activeHabits) {
-        if (dayRecords[habit.id]?.isCompleted == true) {
-          completed++;
-        }
-      }
-      final total = activeHabits.length;
-
-      title = 'Daily Momentum';
-      subtitle = '$completed / $total';
-      percent = total > 0 ? (completed / total).clamp(0.0, 1.0) : 0.0;
-      streak = globalStreak;
-      icon = PhosphorIconsFill.fire;
-      iconColor = const Color(0xFF00FFB2);
+      final firstHabit = habits.where((h) => !h.isArchived).firstOrNull;
+      currentProgress = firstHabit != null ? (dayRecords[firstHabit.id]?.currentValue ?? 0.0) : 0.0;
+      targetProgress = firstHabit != null ? firstHabit.targetValue : 1.0;
+      unit = firstHabit != null && firstHabit.unit.isNotEmpty ? firstHabit.unit : 'done';
+      streak = firstHabit != null ? firstHabit.streak : 0;
     }
 
-    // Render the flutter widget to an image for this specific widgetId
-    await HomeWidget.renderFlutterWidget(
-      DailyProgressWidget(
-        title: title,
-        subtitle: subtitle,
-        percent: percent,
-        streak: streak,
-        icon: icon,
-        iconColor: iconColor,
-      ),
-      key: 'widget_image_$widgetId',
-      logicalSize: const Size(250, 110),
-    );
+    // 2. Calculate values for Flow
+    final activeHabits = habits.where((h) => !h.isArchived).toList();
+    int completedCount = 0;
+    for (final habit in activeHabits) {
+      if (dayRecords[habit.id]?.isCompleted == true) {
+        completedCount++;
+      }
+    }
+    final totalCount = activeHabits.length;
 
-    // Trigger the update to Android
-    await HomeWidget.updateWidget(
-      name: androidWidgetName,
-      iOSName: 'HabitWidget',
+    // 3. Calculate values for LockStreak
+    final Habit? nextIncomplete = activeHabits.cast<Habit?>().firstWhere(
+      (h) => dayRecords[h?.id]?.isCompleted != true,
+      orElse: () => null,
+    );
+    final nextHabitTitle = nextIncomplete?.title ?? 'None';
+    final nextHabitDuration = nextIncomplete != null
+        ? (nextIncomplete.type == HabitType.numeric ? '${nextIncomplete.targetValue.toInt()} ${nextIncomplete.unit}' : '10m')
+        : 'None';
+
+    final Widget widgetToRender;
+    final Size logicalSize;
+
+    switch (type) {
+      case 'streak':
+        widgetToRender = StreakWidget(
+          habit: selectedHabit ?? habits.where((h) => !h.isArchived).firstOrNull,
+          currentProgress: currentProgress,
+          targetProgress: targetProgress,
+          unit: unit,
+          streak: streak,
+        );
+        logicalSize = const Size(160, 160);
+        break;
+      case 'flow':
+        widgetToRender = DailyFlowWidget(
+          completedCount: completedCount,
+          totalCount: totalCount,
+        );
+        logicalSize = const Size(160, 160);
+        break;
+      case 'focus':
+        widgetToRender = const QuickFocusWidget();
+        logicalSize = const Size(160, 160);
+        break;
+      case 'priority':
+        widgetToRender = PriorityHabitsWidget(
+          habits: activeHabits,
+          records: records,
+        );
+        logicalSize = const Size(320, 160);
+        break;
+      case 'circadian':
+        widgetToRender = const CircadianWidget();
+        logicalSize = const Size(320, 160);
+        break;
+      case 'master_grid':
+        widgetToRender = MasterGridWidget(
+          habits: activeHabits,
+          records: records,
+        );
+        logicalSize = const Size(320, 320);
+        break;
+      case 'lock_ring':
+        widgetToRender = LockRingWidget(
+          completedCount: completedCount,
+          totalCount: totalCount,
+        );
+        logicalSize = const Size(160, 72);
+        break;
+      case 'lock_streak':
+        widgetToRender = LockStreakWidget(
+          bestStreak: globalStreak,
+          nextHabitTitle: nextHabitTitle,
+          nextHabitDuration: nextHabitDuration,
+        );
+        logicalSize = const Size(160, 72);
+        break;
+      default:
+        widgetToRender = StreakWidget(
+          habit: selectedHabit ?? habits.where((h) => !h.isArchived).firstOrNull,
+          currentProgress: currentProgress,
+          targetProgress: targetProgress,
+          unit: unit,
+          streak: streak,
+        );
+        logicalSize = const Size(160, 160);
+    }
+
+    final key = widgetId != null ? 'widget_image_${type}_$widgetId' : 'widget_image_$type';
+    await HomeWidget.renderFlutterWidget(
+      widgetToRender,
+      key: key,
+      logicalSize: logicalSize,
     );
   }
 }

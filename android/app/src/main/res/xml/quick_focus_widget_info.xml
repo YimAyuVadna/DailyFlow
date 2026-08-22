@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:configure="com.example.habitflow.WidgetConfigureActivity"
-    android:minWidth="250dp"
+    android:minWidth="110dp"
     android:minHeight="110dp"
-    android:minResizeWidth="200dp"
+    android:minResizeWidth="100dp"
     android:minResizeHeight="100dp"
     android:updatePeriodMillis="1800000"
     android:initialLayout="@layout/widget_layout"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
-    android:previewImage="@drawable/preview_streak" />
+    android:description="@string/widget_focus_desc"
+    android:previewImage="@drawable/preview_focus" />

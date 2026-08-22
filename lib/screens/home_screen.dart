@@ -13,6 +13,7 @@ import '../widgets/empty_state.dart';
 import '../theme/app_theme.dart';
 import 'settings_screen.dart';
 import 'badges_screen.dart';
+import '../widgets/achievement_unlocked_dialog.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -20,6 +21,21 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<List<String>>(unlockedBadgesProvider, (previous, next) {
+      if (previous == null) return;
+      final acknowledged = ref.read(acknowledgedBadgesProvider);
+      final newlyUnlocked = next.where((id) => !previous.contains(id) && !acknowledged.contains(id)).toList();
+      if (newlyUnlocked.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          for (final badgeId in newlyUnlocked) {
+            final badge = allBadges.firstWhere((b) => b.id == badgeId);
+            AchievementUnlockedDialog.show(context, badge);
+            ref.read(acknowledgedBadgesProvider.notifier).acknowledgeBadge(badgeId);
+          }
+        });
+      }
+    });
+
     final habits = ref.watch(habitsProvider);
     final selectedCategory = ref.watch(selectedCategoryProvider);
     final globalStreak = ref.watch(globalStreakProvider);
@@ -79,18 +95,6 @@ class HomeScreen extends ConsumerWidget {
                               },
                               icon: Icon(
                                 PhosphorIconsRegular.trophy,
-                                color: AppTheme.getTextSecondary(context),
-                                size: 20,
-                              ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
-                            const SizedBox(width: 16),
-                            // Theme toggle
-                            IconButton(
-                              onPressed: () => ref.read(themeModeProvider.notifier).toggle(),
-                              icon: Icon(
-                                isDark ? PhosphorIconsRegular.sun : PhosphorIconsRegular.moon,
                                 color: AppTheme.getTextSecondary(context),
                                 size: 20,
                               ),

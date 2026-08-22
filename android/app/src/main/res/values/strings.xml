@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_streak_desc">Streak tracker for a single habit.</string>
+    <string name="widget_flow_desc">Your daily check-in ratio and circular flow ring.</string>
+    <string name="widget_focus_desc">Quick focus timer button for deep work sprints.</string>
+    <string name="widget_priority_desc">List of your top priority habits for today.</string>
+    <string name="widget_circadian_desc">Daily peak focus timeline and energy map.</string>
+    <string name="widget_master_grid_desc">7-day rhythm grid and live consistency metrics.</string>
+    <string name="widget_lock_ring_desc">Habit completion progress ring for your lock screen.</string>
+    <string name="widget_lock_streak_desc">Current best streak and next up habit reminder.</string>
+</resources>
