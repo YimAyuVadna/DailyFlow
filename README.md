@@ -7,11 +7,19 @@ DailyFlow is a beautiful, gamified, and highly customizable Flutter application 
 ## 🚀 Key Features
 
 * **Interactive Habit Tracker:** Create habits of different types (Yes/No boolean or quantitative targets like ml, pages, steps, minutes). Reorder habits easily via drag-and-drop.
-* **Gamification & Leveling:** Complete habits to gain XP and level up. Track a global fire streak that increments as long as you complete at least one habit daily.
-* **Achievements & Badges:** Earn up to 19 unique milestone badges (e.g., *First Step*, *Weekend Warrior*, *Overachiever*, *Centurion*, and *Streak Starter*) as you build habits.
-* **365-Day Activity Heatmap & Matrix:** A GitHub-style activity grid visualizing your consistency over the last year. Choose between 5 customizable color palettes and toggle a gorgeous glow effect in settings.
-* **Home Screen Widgets:** Pin the "Daily Momentum" widget (powered by `home_widget`) to your Android/iOS home screen. Log progress or toggle habit completion directly from the home screen.
-* **Local Notifications:** Daily automated reminders to prompt you to log your daily progress and keep streaks alive.
+* **Gamification & Leveling:** Complete habits to gain XP, level up, and maintain a global streak. Complete habits to hear celebratory sound effects!
+* **Achievements & Badges:** Earn up to 19 unique milestone badges categorized across five rarity tiers (*Common, Uncommon, Rare, Epic, Legendary*).
+* **Interactive Achievement Dialog:** Celebrate milestones with a beautiful, custom-animated achievement popup featuring wiggling confetti particles, XP rewards, and mastery tiers.
+* **365-Day Activity Heatmap & Matrix:** A GitHub-style activity grid visualizing consistency over the last year. Choose between 5 customizable color palettes and toggle a gorgeous glow effect.
+* **Custom Home & Lock Screen Widgets:** Pin interactive widgets to your Android home or lock screen (powered by `home_widget`). Supports 8 customized widget layouts:
+  * **Streak Widget / Lock Streak:** Minimalist tracker to view your current hot streak.
+  * **Daily Flow Widget:** Clean progress bar showing your daily habit completion rate.
+  * **Quick Focus Widget:** Focus on a specific focal habit and check it off with one tap.
+  * **Priority Habits Widget:** Detailed home screen checklist for your top priority habits.
+  * **Circadian Widget:** Track habits mapped to daily circadian rhythm phases (morning, afternoon, night).
+  * **Master Grid Widget:** View a mini 365-day consistency grid directly on your home screen.
+  * **Lock Ring Widget:** Circular circular-progress display for lock screens.
+* **Local Notifications:** Automated reminders with rich notifications to keep you on track.
 * **Category Tabs & Archiving:** Keep your workspace clean by classifying habits into custom categories, or archiving inactive habits without losing history.
 * **Theme Customization:** Seamlessly toggle between dark and light modes with custom-crafted dark UI elements.
 
